@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:test_application/layout.dart';
+import 'package:test_application/views/home_view.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,20 +16,9 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         // This is the theme of the application.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
-        useMaterial3: true,
+        fontFamily: 'Gothic A1',
       ),
-      routes: {
-        '/': (context) => const HomeSearchPage(),
-      },
+      home: HomeView(),
     );
-  }
-}
-
-class HomeSearchPage extends StatelessWidget {
-  const HomeSearchPage({super.key});
-
-  @override
-  Widget build(BuildContext context){
-    return HomePageLayout();
   }
 }
