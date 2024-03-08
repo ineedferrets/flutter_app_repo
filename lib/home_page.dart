@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+
 import 'package:test_application/widgets/mainheader/desktop_header.dart';
 import 'package:test_application/widgets/mainheader/mobile_header.dart';
 import 'package:test_application/widgets/mainheader/nav_bar.dart';
-import 'package:test_application/views/content_view.dart';
 
-class HomeView extends StatefulWidget {
+import 'package:test_application/views/content_view.dart';
+import 'package:test_application/views/app_search_content.dart';
+import 'package:test_application/views/contact_content.dart';
+import 'package:test_application/views/about_content.dart';
+
+class HomePage extends StatefulWidget {
   @override
-  _HomeViewState createState() => _HomeViewState();
+  _HomePageState createState() => _HomePageState();
 }
 
-class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   var scaffoldKey = GlobalKey<ScaffoldState>();
 
   late TabController tabController;
@@ -18,15 +23,15 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
   List<ContentView> contentViews = [
     ContentView(
       tab: const NavBarItem(title: 'Home'),
-      content: Center(child: Container(color: Colors.green, width: 100, height: 100))
-    ),
+      content: AppSearchContent()
+      ),
     ContentView(
       tab: const NavBarItem(title: 'About'),
-      content: Center(child: Container(color: Colors.blue, width: 100, height: 100))
+      content: const AboutContent()
     ),
     ContentView(
       tab: const NavBarItem(title: 'Contact'),
-      content: Center(child: Container(color: Colors.red, width: 100, height: 100))
+      content: const ContactContent()
     ),
   ];
 
