@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "432008081086",
+    "firebase_url": "https://york-game-shield-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "york-game-shield",
+    "storage_bucket": "york-game-shield.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:432008081086:android:a79639540deaa46e7e38ef",
+        "android_client_info": {
+          "package_name": "com.example.test_application"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCL7tFtWItACVGY1QcmfF9TDrhboj7QqvA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

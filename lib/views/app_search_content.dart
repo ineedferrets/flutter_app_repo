@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:firebase_database/firebase_database.dart';
+
 class AppSearchContent extends StatefulWidget {
 
   const AppSearchContent({super.key});
@@ -45,7 +47,7 @@ class _AppSearchContent extends State<AppSearchContent> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            SearchBar(
+            SearchBar( // Search Bar for searching for app.
               constraints: BoxConstraints.expand(width: MediaQuery.of(context).size.width, height: 50),
               leading: const Icon(Icons.search),
               hintText: 'Search for App by Title, Developer, or Publisher',
@@ -54,7 +56,7 @@ class _AppSearchContent extends State<AppSearchContent> {
               onChanged: _onSearchBarChanged,
               onSubmitted: _onSearchBarSubmit,
             ),
-            Padding(
+            Padding( // Dropdowns for filtering apps.
               padding: const EdgeInsets.symmetric(vertical: 10.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -67,6 +69,17 @@ class _AppSearchContent extends State<AppSearchContent> {
                     onChanged: _onSortByChanged
                   ),
                 ],
+              ),
+            ),
+            Padding( // List of apps and information about them.
+              padding: const EdgeInsets.all(10.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Column( // Column of all the apps.
+
+                  )
+                ]
               ),
             )
           ]
