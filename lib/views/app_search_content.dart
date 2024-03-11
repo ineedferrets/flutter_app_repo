@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:test_application/widgets/app_item_widget.dart';
 
 import 'package:firebase_database/firebase_database.dart';
 
@@ -13,6 +14,7 @@ class AppSearchContent extends StatefulWidget {
 class _AppSearchContent extends State<AppSearchContent> {
 
   late TextEditingController _searchController;
+  AppItem? _selectedAppItem;
 
   final List<String> _sortByList = <String>['Downloads', 'Rating', 'Alphabetical'];
   late List<DropdownMenuItem<String>> _sortByItems = [];
@@ -40,7 +42,7 @@ class _AppSearchContent extends State<AppSearchContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Flexible(
+    return Container(
       child: Padding(
         padding: const EdgeInsets.only(top: 20.0, left: 20.0, right: 20.0),
         child: Column(
@@ -71,21 +73,59 @@ class _AppSearchContent extends State<AppSearchContent> {
                 ],
               ),
             ),
-            Padding( // List of apps and information about them.
-              padding: const EdgeInsets.all(10.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Column( // Column of all the apps.
-
-                  )
-                ]
-              ),
-            )
+            _listForApps()
           ]
         ),
       ),
     );
+  }
+
+  Widget _contentsForApps()
+  {
+    if (_selectedAppItem == null)
+    {
+      return _listForApps();
+    }
+    else
+    {
+      return _listForApps();
+    }
+  }
+
+  // Test entries
+  final List<AppItem> entries = [
+    AppItem(title: "Game Title", developer: "Developer", publisher: "Publisher", rating: 4.2, appIcon: Icons.shield_moon, androidAppStoreURL: "https://www.google.co.uk"),
+    AppItem(title: "Game Title", developer: "Developer", publisher: "Publisher", rating: 4.9, appIcon: Icons.book),
+    AppItem(title: "Game Title", developer: "Developer", publisher: "Publisher", rating: 1.2, appIcon: Icons.refresh),
+    AppItem(title: "Game Title", developer: "Developer", publisher: "Publisher", rating: 0.4, appIcon: Icons.gamepad),
+    AppItem(title: "Game Title", developer: "Developer", publisher: "Publisher", rating: 2.6, appIcon: Icons.email),    
+  ];
+
+  Widget _listForApps()
+  {
+    return Expanded(
+      child: ListView.separated(
+        scrollDirection: Axis.vertical,
+        shrinkWrap: true,
+        physics: BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(10.0),
+        itemCount: entries.length,
+        itemBuilder: (BuildContext context, int index) {
+          return AppItemWidget(appItem: entries[index], onPressed: _onAppPressed);
+        },
+        separatorBuilder: (BuildContext context, int index) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 5.0),
+            child: Divider()
+          );
+        },
+      ),
+    );
+  }
+
+  void _onAppPressed()
+  {
+
   }
 
   void _onSearchBarChanged(String value)

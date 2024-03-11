@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:test_application/widgets/centered_view.dart';
+import 'package:test_application/widgets/centered_view_widget.dart';
 import 'package:test_application/widgets/mainheader/nav_bar.dart';
 
 class DesktopHeader extends StatelessWidget {
