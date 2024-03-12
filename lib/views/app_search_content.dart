@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:async/async.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -27,32 +29,9 @@ class _AppSearchContent extends State<AppSearchContent> {
   late int _numOfResultsValue = _numOfResultsList.first;
 
   final FirebaseFirestore db = FirebaseFirestore.instance;
+  late List<AppItem> entries = [];
 
-    // Test entries
-  final List<AppItem> entries = [
-    //AppItem(title: "Labyrinth of Oracle", developer: "Developer", publisher: "Publisher", rating: 4.2, appIcon: Icons.shield_moon, androidAppStoreURL: "https://www.google.co.uk", numOfDownloads: 2000000000),
-    //AppItem(title: "Territories of Eternity", developer: "Developer", publisher: "Publisher", rating: 4.9, appIcon: Icons.book, androidAppStoreURL: "https://www.google.co.uk", numOfDownloads: 30000),
-    //AppItem(title: "Moon Chalice", developer: "Developer", publisher: "Publisher", rating: 1.2, appIcon: Icons.refresh, androidAppStoreURL: "https://www.google.co.uk", numOfDownloads: 25),
-    //AppItem(title: "Underworld of Oracle", developer: "Developer", publisher: "Publisher", rating: 0.4, appIcon: Icons.gamepad, androidAppStoreURL: "https://www.google.co.uk"),
-    //AppItem(title: "Treasure City", developer: "Developer", publisher: "Publisher", rating: 2.6, appIcon: Icons.email),    
-    //AppItem(title: "Wonders of the Solitude", developer: "Developer", publisher: "Publisher", rating: 1, appIcon: Icons.abc),    
-    //AppItem(title: "The Radiant Chalice", developer: "Developer", publisher: "Publisher", rating: 4.3, appIcon: Icons.back_hand),    
-    //AppItem(title: "Tundra of Legends", developer: "Developer", publisher: "Publisher", rating: 5, appIcon: Icons.cable),    
-    //AppItem(title: "Heroes of the Relics", developer: "Developer", publisher: "Publisher", rating: 3, appIcon: Icons.dashboard),    
-    //AppItem(title: "Avengers of the Resilience", developer: "Developer", publisher: "Publisher", rating: 3.4, appIcon: Icons.earbuds),    
-    //AppItem(title: "Citadel of Shadow", developer: "Developer", publisher: "Publisher", rating: 1.2, appIcon: Icons.face),    
-    //AppItem(title: "Citadel of Comets", developer: "Developer", publisher: "Publisher", rating: 0.2, appIcon: Icons.g_mobiledata),    
-    //AppItem(title: "Avalanche Starship", developer: "Developer", publisher: "Publisher", rating: 4.2, appIcon: Icons.hail),    
-    //AppItem(title: "Forest Hero", developer: "Developer", publisher: "Publisher", rating: 4.5, appIcon: Icons.icecream),    
-    //AppItem(title: "Fire Airship", developer: "Developer", publisher: "Publisher", rating: 2.6, appIcon: Icons.join_right),    
-    //AppItem(title: "Citadel of Wizards", developer: "Developer", publisher: "Publisher", rating: 3.2, appIcon: Icons.key),    
-    //AppItem(title: "Phoenix Beacon", developer: "Developer", publisher: "Publisher", rating: 2.1, appIcon: Icons.lan),    
-    //AppItem(title: "Comet Anvil", developer: "Developer", publisher: "Publisher", rating: 1.8, appIcon: Icons.mail),    
-    //AppItem(title: "Champions of the Desolation", developer: "Developer", publisher: "Publisher", rating: 1.1, appIcon: Icons.nat),    
-    //AppItem(title: "Monster Soccer", developer: "Developer", publisher: "Publisher", rating: 4, appIcon: Icons.opacity),    
-    //AppItem(title: "The Brave City", developer: "Developer", publisher: "Publisher", rating: 5, appIcon: Icons.pages),    
-    //AppItem(title: "Haunted Soccer", developer: "Developer", publisher: "Publisher", rating: 2, appIcon: Icons.qr_code),    
-  ];
+  final AsyncMemoizer _memoizer = AsyncMemoizer();
 
   @override
   void initState() {
@@ -104,34 +83,18 @@ class _AppSearchContent extends State<AppSearchContent> {
   {
     if (_selectedAppItem == null)
     {
-      return FutureBuilder<String>(
+      return FutureBuilder<void>(
         future: _getAppData(),
-        initialData: "Loading app data...",
-        builder: (BuildContext context, AsyncSnapshot<String> snapshot){
-          if (snapshot.hasData && snapshot.data!.contains("Error"))
-          {
-            return const Text("Database is unavailable at the moment.");
-          }
-          else
-          {
-            return _listForApps();
-          }
+        builder: (BuildContext context, AsyncSnapshot<void> snapshot){
+          return _listForApps();        
         });
     }
     else
     {
-      return FutureBuilder<String>(
+      return FutureBuilder<void>(
         future: _getAppData(),
-        initialData: "Loading app data...",
-        builder: (BuildContext context, AsyncSnapshot<String> snapshot){
-          if (snapshot.hasData && snapshot.data!.contains("Error"))
-          {
-            return const Text("Database is unavailable at the moment.");
-          }
-          else
-          {
-            return _listForApps();
-          }
+        builder: (BuildContext context, AsyncSnapshot<void> snapshot){
+          return _listForApps();
         });
     }
   }
@@ -205,31 +168,52 @@ class _AppSearchContent extends State<AppSearchContent> {
     );
   }
 
-  Future<String> _getAppData () async
+  Future<void> _getAppData () async
   {
-    entries.clear();
-    await db.collection("apps").get().then((event) {
-      for (var doc in event.docs) {
-        var data = doc.data();
-        entries.add(AppItem(
-          title: data["title"],
-          developer: data["developer"],
-          publisher: data["publisher"],
-          numOfDownloads: data["downloads"],
-          rating: data["rating"],
-          androidAppStoreURL: data["androidURL"],
-          appleAppStoreURL: data["appleURL"],
-          windowsAppStoreURL: data["windowsURL"]
-        ));
-      }
-    });
+    return _memoizer.runOnce(() async {
+      entries.clear();
+      await db.collection("apps").get().then((event) {
+        for (var doc in event.docs) {
+          var data = doc.data();
+          entries.add(AppItem(
+            title: data["title"],
+            developer: data["developer"],
+            publisher: data["publisher"],
+            numOfDownloads: data["downloads"] == null ? 0 : data["downloads"],
+            rating: data["rating"],
+            androidAppStoreURL: data["androidURL"],
+            appleAppStoreURL: data["appleURL"],
+            windowsAppStoreURL: data["windowsURL"]
+          ));
+        }
+      });
 
-    if (entries.isEmpty)
+      await _sortApps();
+    });
+  }
+
+  Future<void> _sortApps() async
+  {
+    if (_sortByValue == 'Downloads')
     {
-      return "Error: Database could not be loaded.";
+      setState(() {
+        entries.sort((AppItem a, AppItem b) => -a.numOfDownloads.compareTo(b.numOfDownloads));
+      });
     }
 
-    return "Success";
+    if (_sortByValue == 'Rating')
+    {
+      setState(() {
+        entries.sort((AppItem a, AppItem b) => -a.rating.compareTo(b.rating));
+      });
+    }
+
+    if (_sortByValue == 'Alphabetical')
+    {
+      setState(() {
+        entries.sort((AppItem a, AppItem b) => a.title.compareTo(b.title));
+      });
+    }
   }
 
   void _onAppPressed()
@@ -252,6 +236,8 @@ class _AppSearchContent extends State<AppSearchContent> {
     if (value == null) { Exception("Sort by changed to null value."); }
     // Update results shown on change.
     setState(() {_sortByValue = value!;});
+
+    _sortApps();
   }
 
   void _onNumOfResultsChanged(int? value)

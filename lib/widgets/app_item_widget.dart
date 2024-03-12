@@ -14,7 +14,7 @@ class AppItem {
     this.windowsAppStoreURL,
     this.rating = 3.0,
     this.appIcon,
-    this.numOfDownloads
+    this.numOfDownloads = 0
   });
   
   final String title;
@@ -26,7 +26,7 @@ class AppItem {
   final double rating;
   IconData? appIcon;
   IconData? posterImage;
-  double? numOfDownloads;
+  double numOfDownloads;
 }
 
 class AppItemWidget extends StatelessWidget {
