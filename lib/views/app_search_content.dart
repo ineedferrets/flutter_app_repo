@@ -83,15 +83,24 @@ class _AppSearchContent extends State<AppSearchContent> {
   {
     if (_selectedAppItem == null)
     {
-      return FutureBuilder<void>(
+      return FutureBuilder<String>(
         future: _getAppData(),
-        builder: (BuildContext context, AsyncSnapshot<void> snapshot){
-          return _listForApps();        
+        builder: (BuildContext context, AsyncSnapshot<String> snapshot){
+          if (snapshot.data != null && snapshot.data!.contains('error'))
+          {
+            print("Failure ${snapshot.data}");
+            return Text(snapshot.data ?? 'Error in site code.');
+          }
+          else
+          {
+            print("Success ${snapshot.data}");
+            return _listForApps();  
+          } 
         });
     }
     else
     {
-      return FutureBuilder<void>(
+      return FutureBuilder<String>(
         future: _getAppData(),
         builder: (BuildContext context, AsyncSnapshot<void> snapshot){
           return _listForApps();
@@ -168,28 +177,45 @@ class _AppSearchContent extends State<AppSearchContent> {
     );
   }
 
-  Future<void> _getAppData () async
+  Future<String> _getAppData ({bool forceReload = false}) async
   {
-    return _memoizer.runOnce(() async {
+    String outcome = '';
+   
+    void pullDataFromDocument (QuerySnapshot<Map<String, dynamic>> event) {
+      for (var doc in event.docs) {
+        var data = doc.data();
+        entries.add(AppItem(
+          title: data["title"],
+          developer: data["developer"],
+          publisher: data["publisher"],
+          numOfDownloads: data["downloads"] ?? 0,
+          rating: data["rating"],
+          androidAppStoreURL: data["androidURL"],
+          appleAppStoreURL: data["appleURL"],
+          windowsAppStoreURL: data["windowsURL"]
+        ));
+      }
+    };
+
+    if (forceReload)
+    {
       entries.clear();
-      await db.collection("apps").get().then((event) {
-        for (var doc in event.docs) {
-          var data = doc.data();
-          entries.add(AppItem(
-            title: data["title"],
-            developer: data["developer"],
-            publisher: data["publisher"],
-            numOfDownloads: data["downloads"] == null ? 0 : data["downloads"],
-            rating: data["rating"],
-            androidAppStoreURL: data["androidURL"],
-            appleAppStoreURL: data["appleURL"],
-            windowsAppStoreURL: data["windowsURL"]
-          ));
+      try {
+        await db.collection("apps").get().then(pullDataFromDocument);
+      } on FirebaseException catch (e) {
+        outcome = 'Failed to load database with error code: ${e.code} and message: ${e.message}';
+      }
+    } else {
+      _memoizer.runOnce(() async {
+        entries.clear();
+        try {
+          await db.collection("apps").get().then(pullDataFromDocument);
+        } on FirebaseException catch (e) {
+          outcome = 'Failed to load database with error code: ${e.code} and message: ${e.message}';
         }
       });
-
-      await _sortApps();
-    });
+    }
+    return outcome;
   }
 
   Future<void> _sortApps() async
@@ -244,5 +270,10 @@ class _AppSearchContent extends State<AppSearchContent> {
   {
     if (value == null) { Exception("Number of results changed to null value."); }
     setState(() {_numOfResultsValue = value!;});
+  }
+
+  void _getSubsectionOfDatabase()
+  {
+    
   }
 }
