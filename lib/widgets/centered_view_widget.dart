@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CenteredView extends StatelessWidget {
-  CenteredView({
+  const CenteredView({
     super.key,
     required this.child,
     this.horizontalPadding = 70.0,

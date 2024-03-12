@@ -30,7 +30,7 @@ class NavBar extends StatelessWidget {
   Widget build(BuildContext context){
     double screenWidth = MediaQuery.of(context).size.width;
     double tabBarScaling = screenWidth > 1400 ? 0.21 : screenWidth > 1100 ? 0.3 : 0.42;
-    return Container(
+    return SizedBox(
       width: screenWidth * tabBarScaling,
       child: Theme(
         data: ThemeData(

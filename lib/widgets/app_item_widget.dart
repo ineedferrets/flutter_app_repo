@@ -13,7 +13,7 @@ class AppItem {
     this.appleAppStoreURL,
     this.windowsAppStoreURL,
     this.rating = 3.0,
-    this.appIcon = null,
+    this.appIcon,
     this.numOfDownloads
   });
   
@@ -41,7 +41,7 @@ class AppItemWidget extends StatelessWidget {
     return OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
       ),
       child: Row(
@@ -72,7 +72,7 @@ class AppItemWidget extends StatelessWidget {
           textAlign: TextAlign.left,
         ),
         Text( // Developer and publisher
-          appItem.developer + (appItem.publisher != null ? ", " + appItem.publisher! : ""),
+          appItem.developer + (appItem.publisher != null ? ", ${appItem.publisher!}" : ""),
           style: Theme.of(context).textTheme.bodyMedium,
           textAlign: TextAlign.left,
         ),
@@ -94,7 +94,7 @@ class AppItemWidget extends StatelessWidget {
         ),
         Text(
           _downloadParser(appItem.numOfDownloads),
-          style: Theme.of(context).textTheme.bodyMedium,
+          style: Theme.of(context).textTheme.bodyLarge,
           textAlign: TextAlign.right,
         ),
         const SizedBox(height: 20.0),
@@ -120,17 +120,17 @@ class AppItemWidget extends StatelessWidget {
     }
     else if (downloads < pow(10, 6))
     {
-      double downlodsInThousands = downloads % 1000;
+      int downlodsInThousands = (downloads / 1000).floor();
       return "$downlodsInThousands k+";
     }
     else if (downloads < pow(10, 9))
     {
-      double downloadsInMillions = downloads % pow(10, 6);
+      int downloadsInMillions = (downloads / pow(10, 6)).floor();
       return "$downloadsInMillions M+";
     }
     else 
     {
-      double downloadsInBillions = downloads % pow(10,9);
+      int downloadsInBillions = (downloads / pow(10,9)).floor();
       return "$downloadsInBillions B+";
     }
   }
@@ -194,7 +194,7 @@ class _AppStoreIconWidget extends StatelessWidget {
   const _AppStoreIconWidget({
     required this.icon, 
     required this.url,
-    this.size = 20.0});
+    this.size = 20});
 
   final IconData icon;
   final String url;
