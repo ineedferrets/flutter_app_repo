@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:async/async.dart';
 import 'dart:math';
 
@@ -30,6 +29,7 @@ class _AppSearchContent extends State<AppSearchContent> {
 
   final FirebaseFirestore db = FirebaseFirestore.instance;
   late List<AppItem> entries = [];
+  late List<AppItem> filteredEntries = [];
 
   final AsyncMemoizer _memoizer = AsyncMemoizer();
 
@@ -63,39 +63,39 @@ class _AppSearchContent extends State<AppSearchContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 20.0, left: 20.0, right: 20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _searchBarWidget(),
-            _filterWidgets(),
-            _contentsForApps()
-          ]
-        ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 20.0, left: 20.0, right: 20.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _searchBarWidget(),
+          _filterWidgets(),
+          _contentsForApps()
+        ]
       ),
     );
   }
 
-  Widget _contentsForApps()
+  Widget _contentsForApps({bool forceReload = false})
   {
     if (_selectedAppItem == null)
     {
       return FutureBuilder<String>(
-        future: _getAppData(),
+        future: _getAppData(forceReload: forceReload),
         builder: (BuildContext context, AsyncSnapshot<String> snapshot){
-          if (snapshot.data != null && snapshot.data!.contains('error'))
+          if (snapshot.hasData && snapshot.data! == 'success')
           {
-            print("Failure ${snapshot.data}");
-            return Text(snapshot.data ?? 'Error in site code.');
+            return _listForApps();
           }
+          else if (snapshot.hasData && snapshot.data!.contains('Error'))
+          {
+            return Text(snapshot.data!);
+          } 
           else
           {
-            print("Success ${snapshot.data}");
-            return _listForApps();  
-          } 
+            return const CircularProgressIndicator();
+          }
         });
     }
     else
@@ -157,15 +157,20 @@ class _AppSearchContent extends State<AppSearchContent> {
 
   Widget _listForApps()
   {
+    if (filteredEntries.isEmpty)
+    {
+      return Text("No results found for: ${_searchController.text}");
+    }
+
     return Expanded(
       child: ListView.separated(
         scrollDirection: Axis.vertical,
         shrinkWrap: true,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.all(10.0),
-        itemCount: entries.length,
+        itemCount: filteredEntries.length,
         itemBuilder: (BuildContext context, int index) {
-          return AppItemWidget(appItem: entries[index], onPressed: _onAppPressed);
+          return AppItemWidget(appItem: filteredEntries[index], onPressed: _onAppPressed);
         },
         separatorBuilder: (BuildContext context, int index) {
           return const Padding(
@@ -179,42 +184,53 @@ class _AppSearchContent extends State<AppSearchContent> {
 
   Future<String> _getAppData ({bool forceReload = false}) async
   {
-    String outcome = '';
+    String outcome = 'success';
+    const String databaseCollection = 'apps';
    
+   // Function to convert data to AppItem.
     void pullDataFromDocument (QuerySnapshot<Map<String, dynamic>> event) {
       for (var doc in event.docs) {
         var data = doc.data();
-        entries.add(AppItem(
-          title: data["title"],
-          developer: data["developer"],
-          publisher: data["publisher"],
-          numOfDownloads: data["downloads"] ?? 0,
-          rating: data["rating"],
-          androidAppStoreURL: data["androidURL"],
-          appleAppStoreURL: data["appleURL"],
-          windowsAppStoreURL: data["windowsURL"]
-        ));
+        setState(() {
+          entries.add(AppItem(
+            title: data["title"],
+            developer: data["developer"],
+            publisher: data["publisher"],
+            numOfDownloads: data["downloads"] ?? 0,
+            rating: data["rating"],
+            androidAppStoreURL: data["androidURL"],
+            appleAppStoreURL: data["appleURL"],
+            windowsAppStoreURL: data["windowsURL"]
+          ));
+        });
       }
-    };
+    }
 
+    // Load data into entries.
     if (forceReload)
     {
       entries.clear();
       try {
-        await db.collection("apps").get().then(pullDataFromDocument);
+        await db.collection(databaseCollection).get().then(pullDataFromDocument);
       } on FirebaseException catch (e) {
-        outcome = 'Failed to load database with error code: ${e.code} and message: ${e.message}';
+        outcome = 'Error: Failed to load database with error code: ${e.code} and message: ${e.message}';
       }
     } else {
       _memoizer.runOnce(() async {
         entries.clear();
         try {
-          await db.collection("apps").get().then(pullDataFromDocument);
+          await db.collection(databaseCollection).get().then(pullDataFromDocument);
         } on FirebaseException catch (e) {
-          outcome = 'Failed to load database with error code: ${e.code} and message: ${e.message}';
+          outcome = 'Error: Failed to load database with error code: ${e.code} and message: ${e.message}';
         }
       });
     }
+
+    // Run through sort by.
+    _sortApps();
+
+    // Run filter.
+    _filterEntries();
     return outcome;
   }
 
@@ -223,23 +239,38 @@ class _AppSearchContent extends State<AppSearchContent> {
     if (_sortByValue == 'Downloads')
     {
       setState(() {
-        entries.sort((AppItem a, AppItem b) => -a.numOfDownloads.compareTo(b.numOfDownloads));
+        filteredEntries.sort((AppItem a, AppItem b) => -a.numOfDownloads.compareTo(b.numOfDownloads));
       });
     }
 
     if (_sortByValue == 'Rating')
     {
       setState(() {
-        entries.sort((AppItem a, AppItem b) => -a.rating.compareTo(b.rating));
+        filteredEntries.sort((AppItem a, AppItem b) => -a.rating.compareTo(b.rating));
       });
     }
 
     if (_sortByValue == 'Alphabetical')
     {
       setState(() {
-        entries.sort((AppItem a, AppItem b) => a.title.compareTo(b.title));
+        filteredEntries.sort((AppItem a, AppItem b) => a.title.compareTo(b.title));
       });
     }
+  }
+
+  void _filterEntries()
+  {
+    setState(() {
+      filteredEntries.clear();
+
+      filteredEntries = entries.where((AppItem app) {
+        String searchString = _searchController.text.toLowerCase();
+        if (searchString.isEmpty) { return true; }
+        return app.title.toLowerCase().contains(searchString)
+        || app.developer.toLowerCase().contains(searchString) 
+        || (app.publisher != null ? app.publisher!.toLowerCase().contains(searchString) : false);
+      }).toList();
+    }); 
   }
 
   void _onAppPressed()
@@ -250,11 +281,13 @@ class _AppSearchContent extends State<AppSearchContent> {
   void _onSearchBarChanged(String value)
   {
     // Update results shown on change.
+    _filterEntries();
   }
 
   void _onSearchBarSubmit(String value)
   {
     // Update results shown on change.
+    _filterEntries();
   }
 
   void _onSortByChanged(String? value)
@@ -270,10 +303,5 @@ class _AppSearchContent extends State<AppSearchContent> {
   {
     if (value == null) { Exception("Number of results changed to null value."); }
     setState(() {_numOfResultsValue = value!;});
-  }
-
-  void _getSubsectionOfDatabase()
-  {
-    
   }
 }
