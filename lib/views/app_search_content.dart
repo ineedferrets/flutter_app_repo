@@ -2,6 +2,7 @@ import 'package:async/async.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:number_paginator/number_paginator.dart';
 import 'package:test_application/widgets/app_item_widget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -26,6 +27,7 @@ class _AppSearchContent extends State<AppSearchContent> {
   final List<int> _numOfResultsList = <int>[10, 25, 50];
   late List<DropdownMenuItem<int>> _numOfResultsItems = [];
   late int _numOfResultsValue = _numOfResultsList.first;
+  late int _currentPage = 0;
 
   final FirebaseFirestore db = FirebaseFirestore.instance;
   late List<AppItem> entries = [];
@@ -82,7 +84,7 @@ class _AppSearchContent extends State<AppSearchContent> {
     if (_selectedAppItem == null)
     {
       return FutureBuilder<String>(
-        future: _getAppData(forceReload: forceReload),
+        future: _updateAppData(forceReload: forceReload),
         builder: (BuildContext context, AsyncSnapshot<String> snapshot){
           if (snapshot.hasData && snapshot.data! == 'success')
           {
@@ -101,7 +103,7 @@ class _AppSearchContent extends State<AppSearchContent> {
     else
     {
       return FutureBuilder<String>(
-        future: _getAppData(),
+        future: _updateAppData(),
         builder: (BuildContext context, AsyncSnapshot<void> snapshot){
           return _listForApps();
         });
@@ -162,27 +164,39 @@ class _AppSearchContent extends State<AppSearchContent> {
       return Text("No results found for: ${_searchController.text}");
     }
 
+    int numOfResultsToRender = min(_numOfResultsValue, filteredEntries.length - (_numOfResultsValue * _currentPage));
+    
     return Expanded(
-      child: ListView.separated(
-        scrollDirection: Axis.vertical,
-        shrinkWrap: true,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(10.0),
-        itemCount: filteredEntries.length,
-        itemBuilder: (BuildContext context, int index) {
-          return AppItemWidget(appItem: filteredEntries[index], onPressed: _onAppPressed);
-        },
-        separatorBuilder: (BuildContext context, int index) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 5.0),
-            child: Divider()
-          );
-        },
+      child: Column(
+        children: [
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.all(10.0),
+              itemCount: numOfResultsToRender,
+              itemBuilder: (BuildContext context, int index) {
+                int adjustedIndex = (_currentPage * _numOfResultsValue) + index;
+                return AppItemWidget(appItem: filteredEntries[adjustedIndex], onPressed: _onAppPressed);
+              },
+              separatorBuilder: (BuildContext context, int index) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 5.0),
+                  child: Divider()
+                );
+              },
+            ),
+          ),
+          NumberPaginator(
+            numberPages: (filteredEntries.length / _numOfResultsValue).ceil(),
+            onPageChange: (int index) => setState(() {
+              _currentPage = index;
+            }),
+           ),
+        ],
       ),
     );
   }
 
-  Future<String> _getAppData ({bool forceReload = false}) async
+  Future<String> _updateAppData({bool forceReload = false}) async
   {
     String outcome = 'success';
     const String databaseCollection = 'apps';
@@ -226,41 +240,41 @@ class _AppSearchContent extends State<AppSearchContent> {
       });
     }
 
-    // Run through sort by.
+    _filterEntries();
     _sortApps();
 
-    // Run filter.
-    _filterEntries();
+    if (entries.isEmpty)
+    {
+      return "waiting";
+    }
+
     return outcome;
   }
 
-  Future<void> _sortApps() async
+  void _sortApps()
   {
-    if (_sortByValue == 'Downloads')
-    {
-      setState(() {
+    setState(() {
+      if (_sortByValue == 'Downloads')
+      {
         filteredEntries.sort((AppItem a, AppItem b) => -a.numOfDownloads.compareTo(b.numOfDownloads));
-      });
-    }
+      }
 
-    if (_sortByValue == 'Rating')
-    {
-      setState(() {
+      if (_sortByValue == 'Rating')
+      {
         filteredEntries.sort((AppItem a, AppItem b) => -a.rating.compareTo(b.rating));
-      });
-    }
+      }
 
-    if (_sortByValue == 'Alphabetical')
-    {
-      setState(() {
+      if (_sortByValue == 'Alphabetical')
+      {
         filteredEntries.sort((AppItem a, AppItem b) => a.title.compareTo(b.title));
-      });
-    }
+      }
+    });
   }
 
   void _filterEntries()
   {
     setState(() {
+      _currentPage = 0;
       filteredEntries.clear();
 
       filteredEntries = entries.where((AppItem app) {
@@ -295,8 +309,6 @@ class _AppSearchContent extends State<AppSearchContent> {
     if (value == null) { Exception("Sort by changed to null value."); }
     // Update results shown on change.
     setState(() {_sortByValue = value!;});
-
-    _sortApps();
   }
 
   void _onNumOfResultsChanged(int? value)
