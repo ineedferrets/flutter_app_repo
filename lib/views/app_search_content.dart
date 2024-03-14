@@ -3,7 +3,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:number_paginator/number_paginator.dart';
-import 'package:test_application/widgets/app_item_widget.dart';
+
+import 'package:test_application/widgets/app/app_item_popup_dialog.dart';
+import 'package:test_application/widgets/app/app_item.dart';
+import 'package:test_application/widgets/app/app_list_item_widget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -29,11 +32,13 @@ class _AppSearchContent extends State<AppSearchContent> {
   late int _numOfResultsValue = _numOfResultsList.first;
   late int _currentPage = 0;
 
-  final FirebaseFirestore db = FirebaseFirestore.instance;
-  late List<AppItem> entries = [];
-  late List<AppItem> filteredEntries = [];
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  late List<AppItem> _entries = [];
+  late List<AppItem> _filteredEntries = [];
 
   final AsyncMemoizer _memoizer = AsyncMemoizer();
+
+  final double _maxWidthForPopup = 1000;
 
   @override
   void initState() {
@@ -83,30 +88,15 @@ class _AppSearchContent extends State<AppSearchContent> {
   {
     if (_selectedAppItem == null)
     {
-      return FutureBuilder<String>(
-        future: _updateAppData(forceReload: forceReload),
-        builder: (BuildContext context, AsyncSnapshot<String> snapshot){
-          if (snapshot.hasData && snapshot.data! == 'success')
-          {
-            return _listForApps();
-          }
-          else if (snapshot.hasData && snapshot.data!.contains('Error'))
-          {
-            return Text(snapshot.data!);
-          } 
-          else
-          {
-            return const CircularProgressIndicator();
-          }
-        });
+      return _listForApps(forceReload: forceReload);
     }
     else
     {
-      return FutureBuilder<String>(
-        future: _updateAppData(),
-        builder: (BuildContext context, AsyncSnapshot<void> snapshot){
-          return _listForApps();
-        });
+      if (MediaQuery.of(context).size.width <= _maxWidthForPopup)
+      {
+        return _listForApps(forceReload: forceReload);
+      }
+      return _listForApps(forceReload: forceReload);
     }
   }
 
@@ -157,43 +147,63 @@ class _AppSearchContent extends State<AppSearchContent> {
         );
   }
 
-  Widget _listForApps()
+  Widget _listForApps({bool forceReload = false})
   {
-    if (filteredEntries.isEmpty)
-    {
-      return Text("No results found for: ${_searchController.text}");
-    }
+    return FutureBuilder<String>(
+      future: _updateAppData(forceReload: forceReload),
+      builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+        if (!snapshot.hasData)
+        {
+          return const CircularProgressIndicator();
+        }
+        else if (snapshot.hasData && snapshot.data!.contains('Error'))
+        {
+          return Text(snapshot.data!);
+        }
+        else if (snapshot.hasData && snapshot.data!.contains('success'))
+        {
+          if (_filteredEntries.isEmpty)
+          {
+            return Text("No results found for: ${_searchController.text}");
+          }
 
-    int numOfResultsToRender = min(_numOfResultsValue, filteredEntries.length - (_numOfResultsValue * _currentPage));
-    
-    return Expanded(
-      child: Column(
-        children: [
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(10.0),
-              itemCount: numOfResultsToRender,
-              itemBuilder: (BuildContext context, int index) {
-                int adjustedIndex = (_currentPage * _numOfResultsValue) + index;
-                return AppItemWidget(appItem: filteredEntries[adjustedIndex], onPressed: _onAppPressed);
-              },
-              separatorBuilder: (BuildContext context, int index) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 5.0),
-                  child: Divider()
-                );
-              },
+          int numOfResultsToRender = min(_numOfResultsValue, _filteredEntries.length - (_numOfResultsValue * _currentPage));
+          
+          return Expanded(
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(10.0),
+                    itemCount: numOfResultsToRender,
+                    itemBuilder: (BuildContext context, int index) {
+                      int adjustedIndex = (_currentPage * _numOfResultsValue) + index;
+                      return AppItemWidget(appItem: _filteredEntries[adjustedIndex], onPressed: _onAppPressed);
+                    },
+                    separatorBuilder: (BuildContext context, int index) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 5.0),
+                        child: Divider()
+                      );
+                    },
+                  ),
+                ),
+                NumberPaginator(
+                  numberPages: (_filteredEntries.length / _numOfResultsValue).ceil(),
+                  onPageChange: (int index) => setState(() {
+                    _currentPage = index;
+                  }),
+                ),
+              ],
             ),
-          ),
-          NumberPaginator(
-            numberPages: (filteredEntries.length / _numOfResultsValue).ceil(),
-            onPageChange: (int index) => setState(() {
-              _currentPage = index;
-            }),
-           ),
-        ],
-      ),
-    );
+          );
+        }
+        else
+        {
+          return const CircularProgressIndicator();
+        }
+      });
+    
   }
 
   Future<String> _updateAppData({bool forceReload = false}) async
@@ -206,7 +216,7 @@ class _AppSearchContent extends State<AppSearchContent> {
       for (var doc in event.docs) {
         var data = doc.data();
         setState(() {
-          entries.add(AppItem(
+          _entries.add(AppItem(
             title: data["title"],
             developer: data["developer"],
             publisher: data["publisher"],
@@ -223,17 +233,17 @@ class _AppSearchContent extends State<AppSearchContent> {
     // Load data into entries.
     if (forceReload)
     {
-      entries.clear();
+      _entries.clear();
       try {
-        await db.collection(databaseCollection).get().then(pullDataFromDocument);
+        await _db.collection(databaseCollection).get().then(pullDataFromDocument);
       } on FirebaseException catch (e) {
         outcome = 'Error: Failed to load database with error code: ${e.code} and message: ${e.message}';
       }
     } else {
       _memoizer.runOnce(() async {
-        entries.clear();
+        _entries.clear();
         try {
-          await db.collection(databaseCollection).get().then(pullDataFromDocument);
+          await _db.collection(databaseCollection).get().then(pullDataFromDocument);
         } on FirebaseException catch (e) {
           outcome = 'Error: Failed to load database with error code: ${e.code} and message: ${e.message}';
         }
@@ -243,7 +253,7 @@ class _AppSearchContent extends State<AppSearchContent> {
     _filterEntries();
     _sortApps();
 
-    if (entries.isEmpty)
+    if (_entries.isEmpty)
     {
       return "waiting";
     }
@@ -256,17 +266,17 @@ class _AppSearchContent extends State<AppSearchContent> {
     setState(() {
       if (_sortByValue == 'Downloads')
       {
-        filteredEntries.sort((AppItem a, AppItem b) => -a.numOfDownloads.compareTo(b.numOfDownloads));
+        _filteredEntries.sort((AppItem a, AppItem b) => -a.numOfDownloads.compareTo(b.numOfDownloads));
       }
 
       if (_sortByValue == 'Rating')
       {
-        filteredEntries.sort((AppItem a, AppItem b) => -a.rating.compareTo(b.rating));
+        _filteredEntries.sort((AppItem a, AppItem b) => -a.rating.compareTo(b.rating));
       }
 
       if (_sortByValue == 'Alphabetical')
       {
-        filteredEntries.sort((AppItem a, AppItem b) => a.title.compareTo(b.title));
+        _filteredEntries.sort((AppItem a, AppItem b) => a.title.compareTo(b.title));
       }
     });
   }
@@ -275,9 +285,9 @@ class _AppSearchContent extends State<AppSearchContent> {
   {
     setState(() {
       _currentPage = 0;
-      filteredEntries.clear();
+      _filteredEntries.clear();
 
-      filteredEntries = entries.where((AppItem app) {
+      _filteredEntries = _entries.where((AppItem app) {
         String searchString = _searchController.text.toLowerCase();
         if (searchString.isEmpty) { return true; }
         return app.title.toLowerCase().contains(searchString)
@@ -287,9 +297,13 @@ class _AppSearchContent extends State<AppSearchContent> {
     }); 
   }
 
-  void _onAppPressed()
+  void _onAppPressed(AppItem app)
   {
-
+    setState(() { _selectedAppItem = app; });
+    if (MediaQuery.of(context).size.width < _maxWidthForPopup)
+    {
+      AppItemPopupDialog.showAppPopupDialog(context, app);
+    }
   }
 
   void _onSearchBarChanged(String value)
