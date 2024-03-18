@@ -122,11 +122,13 @@ class NumberOfDownloadsWidget extends StatelessWidget {
           "Number of Downloads:",
           style: textStyle ?? Theme.of(context).textTheme.bodyLarge,
           textAlign: textAlign,
+          overflow: TextOverflow.ellipsis,
         ),
         Text(
           _downloadParser(numOfDownloads),
           style: textStyle ?? Theme.of(context).textTheme.bodyLarge,
           textAlign: textAlign,
+          overflow: TextOverflow.ellipsis,
         ),
       ]
     );
@@ -169,7 +171,11 @@ class DownloadLocationsWidget extends StatelessWidget {
     this.appleURL,
     this.windowsURL ,
     this.iconSize = 20,
-    this.iconSpacing = 10
+    this.iconSpacing = 10,
+    this.colMainAxisAlignment = MainAxisAlignment.start,
+    this.colCrossAxisAlignment = CrossAxisAlignment.start,
+    this.rowMainAxisAlignment = MainAxisAlignment.start,
+    this.rowCrossAxisAlignment = CrossAxisAlignment.start
   });
 
   final String? androidURL;
@@ -177,6 +183,10 @@ class DownloadLocationsWidget extends StatelessWidget {
   final String? windowsURL;
   final double iconSize;
   final double iconSpacing;
+  final MainAxisAlignment colMainAxisAlignment;
+  final CrossAxisAlignment colCrossAxisAlignment;
+  final MainAxisAlignment rowMainAxisAlignment;
+  final CrossAxisAlignment rowCrossAxisAlignment;
 
   @override
   Widget build(BuildContext context)
@@ -235,14 +245,17 @@ class DownloadLocationsWidget extends StatelessWidget {
     }
 
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisAlignment: colMainAxisAlignment,
+      crossAxisAlignment: colCrossAxisAlignment,
       children: [
         Text(
           "Available Platforms:",
-          style: Theme.of(context).textTheme.bodyLarge
+          style: Theme.of(context).textTheme.bodyLarge,
+          overflow: TextOverflow.ellipsis,
         ),
         Row(
+          mainAxisAlignment: rowMainAxisAlignment,
+          crossAxisAlignment: rowCrossAxisAlignment,
           children: storeIcons,
         )
       ]

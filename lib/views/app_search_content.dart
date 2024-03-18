@@ -35,7 +35,7 @@ class _AppSearchContent extends State<AppSearchContent> with SingleTickerProvide
   late int _currentPage = 0;
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  late List<AppItem> _entries = [];
+  late final List<AppItem> _entries = [];
   late List<AppItem> _filteredEntries = [];
 
   final AsyncMemoizer _memoizer = AsyncMemoizer();
