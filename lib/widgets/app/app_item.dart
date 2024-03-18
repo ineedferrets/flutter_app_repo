@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 class AppItem {
+
+  static AppItem EmptyApp = AppItem(title: "Empty", developer: "Empty");
+
   AppItem({
     required this.title,
     required this.developer,

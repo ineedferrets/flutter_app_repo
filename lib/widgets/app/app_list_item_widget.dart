@@ -28,37 +28,44 @@ class AppItemWidget extends StatelessWidget {
             size: 110.0, 
             color: Colors.black45
             ),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TitleDeveloperPublisherWidget(
-                title: appItem.title,
-                developer: appItem.developer,
-                publisher: appItem.publisher,
-              ),
-              StarRatingWidget(
-                rating: appItem.rating,
-              )
-            ],
-          ),
-          const Spacer(),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              NumberOfDownloadsWidget(
-                numOfDownloads: appItem.numOfDownloads,
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                textAlign: TextAlign.right,
+          Expanded(
+            flex: 2,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TitleDeveloperPublisherWidget(
+                  title: appItem.title,
+                  developer: appItem.developer,
+                  publisher: appItem.publisher,
                 ),
-                DownloadLocationsWidget(
-                  appleURL: appItem.appleAppStoreURL,
-                  androidURL: appItem.androidAppStoreURL,
-                  windowsURL: appItem.windowsAppStoreURL,
+                StarRatingWidget(
+                  rating: appItem.rating,
                 )
-            ],
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                NumberOfDownloadsWidget(
+                  numOfDownloads: appItem.numOfDownloads,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  textAlign: TextAlign.right,
+                  ),
+                  DownloadLocationsWidget(
+                    colCrossAxisAlignment: CrossAxisAlignment.end,
+                    rowMainAxisAlignment: MainAxisAlignment.end,
+                    appleURL: appItem.appleAppStoreURL,
+                    androidURL: appItem.androidAppStoreURL,
+                    windowsURL: appItem.windowsAppStoreURL,
+                  )
+              ],
+            ),
           )
         ],
       ),

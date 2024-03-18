@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:number_paginator/number_paginator.dart';
+import 'package:test_application/widgets/app/app_information_widget.dart';
 
 import 'package:test_application/widgets/app/app_item_popup_dialog.dart';
 import 'package:test_application/widgets/app/app_item.dart';
@@ -18,10 +19,11 @@ class AppSearchContent extends StatefulWidget {
   _AppSearchContent createState() => _AppSearchContent();
 }
 
-class _AppSearchContent extends State<AppSearchContent> {
+class _AppSearchContent extends State<AppSearchContent> with SingleTickerProviderStateMixin {
 
   late TextEditingController _searchController;
   AppItem? _selectedAppItem;
+  AppItem? _previouslySelectedAppItem;
 
   final List<String> _sortByList = <String>['Downloads', 'Rating', 'Alphabetical'];
   late List<DropdownMenuItem<String>> _sortByItems = [];
@@ -33,7 +35,7 @@ class _AppSearchContent extends State<AppSearchContent> {
   late int _currentPage = 0;
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  late List<AppItem> _entries = [];
+  late final List<AppItem> _entries = [];
   late List<AppItem> _filteredEntries = [];
 
   final AsyncMemoizer _memoizer = AsyncMemoizer();
@@ -86,18 +88,56 @@ class _AppSearchContent extends State<AppSearchContent> {
 
   Widget _contentsForApps({bool forceReload = false})
   {
-    if (_selectedAppItem == null)
+    final double mediaWidth = MediaQuery.of(context).size.width;
+    
+    // If on mobile/thin screen, use pop up for
+    if (mediaWidth <= _maxWidthForPopup)
     {
       return _listForApps(forceReload: forceReload);
     }
-    else
-    {
-      if (MediaQuery.of(context).size.width <= _maxWidthForPopup)
-      {
-        return _listForApps(forceReload: forceReload);
-      }
-      return _listForApps(forceReload: forceReload);
-    }
+
+    // Otherwise, split the screen to show the information on the right.
+    return Expanded(
+      child: Row(
+        children: [
+          _listForApps(forceReload: forceReload),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 500),
+            width: _selectedAppItem != null ? mediaWidth * 0.5 : 0,
+            curve: Curves.easeIn,
+            child: Row(
+                children: [
+                  const VerticalDivider(
+                    width: 10
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(10.0),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              const Spacer(),
+                              IconButton(
+                                onPressed: () => _onAppPressed(null),
+                                icon: const Icon(Icons.close))
+                            ],
+                          ),
+                          AppInformationWidget(
+                            appItem: _selectedAppItem != null ? _selectedAppItem! 
+                            : _previouslySelectedAppItem != null ? _previouslySelectedAppItem! 
+                            : AppItem.EmptyApp,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   var rng = Random();
@@ -189,6 +229,7 @@ class _AppSearchContent extends State<AppSearchContent> {
                   ),
                 ),
                 NumberPaginator(
+                  initialPage: _currentPage,
                   numberPages: (_filteredEntries.length / _numOfResultsValue).ceil(),
                   onPageChange: (int index) => setState(() {
                     _currentPage = index;
@@ -284,12 +325,13 @@ class _AppSearchContent extends State<AppSearchContent> {
   void _filterEntries()
   {
     setState(() {
-      _currentPage = 0;
+
       _filteredEntries.clear();
 
       _filteredEntries = _entries.where((AppItem app) {
         String searchString = _searchController.text.toLowerCase();
         if (searchString.isEmpty) { return true; }
+        _currentPage = 0;
         return app.title.toLowerCase().contains(searchString)
         || app.developer.toLowerCase().contains(searchString) 
         || (app.publisher != null ? app.publisher!.toLowerCase().contains(searchString) : false);
@@ -297,12 +339,24 @@ class _AppSearchContent extends State<AppSearchContent> {
     }); 
   }
 
-  void _onAppPressed(AppItem app)
+  void _onAppPressed(AppItem? app)
   {
-    setState(() { _selectedAppItem = app; });
+    if (app == _selectedAppItem) { app = null; }
+
+    setState(() {
+      _previouslySelectedAppItem = _selectedAppItem;
+      _selectedAppItem = app;
+      });
+
+    if (app == null)
+    {
+      return;
+    }
+
     if (MediaQuery.of(context).size.width < _maxWidthForPopup)
     {
       AppItemPopupDialog.showAppPopupDialog(context, app);
+      return;
     }
   }
 
