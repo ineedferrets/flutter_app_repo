@@ -258,14 +258,14 @@ class _AppSearchContent extends State<AppSearchContent> with SingleTickerProvide
         var data = doc.data();
         setState(() {
           _entries.add(AppItem(
-            title: data["title"],
-            developer: data["developer"],
-            publisher: data["publisher"],
-            numOfDownloads: data["downloads"] ?? 0,
-            rating: data["rating"],
-            androidAppStoreURL: data["androidURL"],
-            appleAppStoreURL: data["appleURL"],
-            windowsAppStoreURL: data["windowsURL"]
+            title: data[AppItem.titleRef],
+            developer: data[AppItem.developerRef],
+            publisher: data[AppItem.publisherRef],
+            numOfDownloads: data[AppItem.downloadsRef] ?? 0,
+            rating: data[AppItem.ratingRef],
+            androidAppStoreURL: data[AppItem.androidURLRef],
+            appleAppStoreURL: data[AppItem.androidURLRef],
+            windowsAppStoreURL: data[AppItem.windowsURLRef]
           ));
         });
       }

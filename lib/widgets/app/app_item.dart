@@ -4,6 +4,15 @@ class AppItem {
 
   static AppItem EmptyApp = AppItem(title: "Empty", developer: "Empty");
 
+  static String titleRef = "title";
+  static String developerRef = "developer";
+  static String publisherRef = "publisher";
+  static String downloadsRef = "downloads";
+  static String ratingRef = "ratings";
+  static String androidURLRef = "androidURL";
+  static String appleURLRef = "appleURL";
+  static String windowsURLRef = "windowsURL";
+
   AppItem({
     required this.title,
     required this.developer,
