@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:test_application/widgets/centered_view.dart';
+import 'package:test_application/widgets/centered_view_widget.dart';
 
 class MobileHeader extends StatelessWidget {
 
@@ -32,7 +32,7 @@ class MobileHeader extends StatelessWidget {
               IconButton(
                 onPressed: scaffoldState.currentState?.openEndDrawer, 
                 iconSize: MediaQuery.of(context).size.width * 0.1,
-                icon: Icon(Icons.menu_rounded), 
+                icon: const Icon(Icons.menu_rounded), 
                 color: Colors.white)
           ],
         ),

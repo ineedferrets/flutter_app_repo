@@ -10,6 +10,8 @@ import 'package:test_application/views/contact_content.dart';
 import 'package:test_application/views/about_content.dart';
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -23,7 +25,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   List<ContentView> contentViews = [
     ContentView(
       tab: const NavBarItem(title: 'Home'),
-      content: AppSearchContent()
+      content: const AppSearchContent()
       ),
     ContentView(
       tab: const NavBarItem(title: 'About'),
@@ -83,7 +85,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   Widget mobileView() {
-    return Container(
+    return SizedBox(
       width: MediaQuery.of(context).size.width,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
