@@ -35,11 +35,13 @@ class TitleDeveloperPublisherWidget extends StatelessWidget {
           title,
           style: titleStyle ?? Theme.of(context).textTheme.headlineMedium,
           textAlign: textAlign,
+          overflow: TextOverflow.ellipsis,
         ),
         Text( // Developer and publisher
-          developer + (", ${publisher ?? ""}"),
+          developer + (publisher != null ? ", ${publisher!}" : "" ),
           style: devPubStyle ?? Theme.of(context).textTheme.bodyLarge,
           textAlign: textAlign,
+          overflow: TextOverflow.ellipsis,
         )
       ],
     );

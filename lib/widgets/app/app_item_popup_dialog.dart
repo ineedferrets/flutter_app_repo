@@ -44,7 +44,19 @@ class AppItemPopupDialog {
             ),
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: AppInformationWidget(appItem: app)
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Spacer(), 
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close))
+                    ],
+                  ),
+                  AppInformationWidget(appItem: app),
+                ],
+              )
             )
           ),
         ),
